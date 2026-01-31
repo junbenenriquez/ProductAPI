@@ -20,7 +20,8 @@ A sample ASP.NET Core Web API demonstrating Clean Architecture, JWT authenticati
 
 3. Run migrations and start API:
 
-   dotnet ef database update
+   dotnet ef database 
+   
    dotnet run
 
 
