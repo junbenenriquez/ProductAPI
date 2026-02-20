@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using AutoMapper;
 using Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services
 {
@@ -8,53 +9,56 @@ namespace Application.Services
     {
         private readonly IProductRepository _repo;
         private readonly IMapper _mapper;
+        private readonly IAppLogger<ProductService> _logger;
 
-        public ProductService(IProductRepository repo, IMapper mapper)
+        public ProductService(IProductRepository repo, IMapper mapper, IAppLogger<ProductService> logger)
         {
             _repo = repo;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
         {
-            var entities = await _repo.GetAllAsync();
-            return _mapper.Map<IEnumerable<ProductDto>>(entities);
+            var products = await _repo.GetAllAsync();
+            return _mapper.Map<IEnumerable<ProductDto>>(products);
         }
 
         public async Task<ProductDto> CreateProductAsync(CreateProductDto dto)
         {
-            var entity = _mapper.Map<Product>(dto);
-            entity.CreatedAt = DateTime.UtcNow;
-            entity.CreatedBy = "system";
-            await _repo.AddAsync(entity);
-            return _mapper.Map<ProductDto>(entity);
+            var product = _mapper.Map<Product>(dto);
+            product.CreatedAt = DateTime.UtcNow;
+            product.CreatedBy = "system";
+            await _repo.AddAsync(product);
+            _logger.LogInformation($"Product {product.Id} created by {product.CreatedBy}");
+            return _mapper.Map<ProductDto>(product);
         }
 
         public async Task<ProductDto?> GetByProductIdAsync(int id)
         {
-            var entity = await _repo.GetByIdAsync(id, true);
-            return entity == null ? null : _mapper.Map<ProductDto>(entity);
+            var product = await _repo.GetByIdAsync(id, true);
+            return product == null ? null : _mapper.Map<ProductDto>(product);
         }
 
         public async Task<ProductDto?> UpdateProductAsync(int id, UpdateProductDto dto)
         {
-            var entity = await _repo.GetByIdAsync(id, false);
+            var product = await _repo.GetByIdAsync(id, false);
 
-            if (entity == null)
+            if (product == null)
                 return null;
 
-            _mapper.Map(dto, entity);
-            entity.UpdatedAt = DateTime.UtcNow;
-            entity.UpdatedBy = "system";
+            _mapper.Map(dto, product);
+            product.UpdatedAt = DateTime.UtcNow;
+            product.UpdatedBy = "system";
 
-            await _repo.UpdateAsync(entity);
-
-            return _mapper.Map<ProductDto>(entity);
+            await _repo.UpdateAsync(product);
+            _logger.LogInformation($"Product {product.Id} updated by {product.UpdatedBy}");
+            return _mapper.Map<ProductDto>(product);
         }
 
         public async Task<bool> DeleteProductAsync(int id, string deletedBy)
         {
-            var product = await _repo.GetByIdAsync(id, true);
+            var product = await _repo.GetByIdAsync(id, false);
 
             if (product == null || product.DeletedAt != null)
                 return false;
@@ -62,7 +66,7 @@ namespace Application.Services
             product.DeletedBy = deletedBy;
             product.DeletedAt = DateTime.UtcNow;
             product.IsDeleted = true;
-
+            _logger.LogInformation($"Product {product.Id} deleted by {product.DeletedBy}");
             await _repo.UpdateAsync(product);
             return true;
         }

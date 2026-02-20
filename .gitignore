@@ -10,6 +10,7 @@ TestResults/
 *.vscode/
 
 # Logs
+logs/
 *.log
 
 # Database / EF Core files

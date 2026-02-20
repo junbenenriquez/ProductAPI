@@ -9,8 +9,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using API.Services;
+using Serilog;
+using Infrastructure.Logging;
+
+// Configure Serilog for console and rolling file logs
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()        // default minimum level
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning) // suppress info-level framework logs
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Replace default logger with Serilog
+builder.Host.UseSerilog();
 
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -57,6 +72,7 @@ builder.Services.AddAutoMapper(cfg =>
 });
 
 // DI
+builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<AuthService>(sp =>
@@ -113,10 +129,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty;
 });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
