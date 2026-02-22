@@ -12,13 +12,15 @@ namespace Tests.Application.Services
     {
         private readonly Mock<IProductRepository> _repoMock;
         private readonly Mock<IMapper> _mapperMock;
+        private readonly Mock<IAppLogger<ProductService>> _appLoggerMock;
         private readonly ProductService _service;
 
         public ProductServiceTests()
         {
             _repoMock = new Mock<IProductRepository>();
             _mapperMock = new Mock<IMapper>();
-            _service = new ProductService(_repoMock.Object, _mapperMock.Object);
+            _appLoggerMock = new Mock<IAppLogger<ProductService>>();
+            _service = new ProductService(_repoMock.Object, _mapperMock.Object, _appLoggerMock.Object);
         }
 
         #region GetAllProductsAsync
